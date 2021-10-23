@@ -57,9 +57,9 @@ func (s *Searcher) SearchFsEvents(startTimestamp, endTimestamp int64, username, 
 	sess = sess.Limit(limit)
 
 	if order == 0 {
-		sess = sess.Order("timestamp DESC").Find(&results)
+		sess = sess.Order("timestamp DESC, id DESC").Find(&results)
 	} else {
-		sess = sess.Order("timestamp ASC").Find(&results)
+		sess = sess.Order("timestamp ASC, id ASC").Find(&results)
 	}
 	err := sess.Error
 	if err != nil {
@@ -133,9 +133,9 @@ func (s *Searcher) SearchProviderEvents(startTimestamp, endTimestamp int64, user
 	sess = sess.Limit(limit)
 
 	if order == 0 {
-		sess = sess.Order("timestamp DESC").Find(&results)
+		sess = sess.Order("timestamp DESC, id DESC").Find(&results)
 	} else {
-		sess = sess.Order("timestamp ASC").Find(&results)
+		sess = sess.Order("timestamp ASC, id ASC").Find(&results)
 	}
 	err := sess.Error
 	if err != nil {
