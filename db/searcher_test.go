@@ -23,6 +23,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Status:            1,
 			Protocol:          "SFTP",
 			IP:                "::1",
+			SessionID:         "1",
 			InstanceID:        "instance1",
 		},
 		{
@@ -39,6 +40,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Status:            2,
 			Protocol:          "SFTP",
 			IP:                "::1",
+			SessionID:         "2",
 			InstanceID:        "instance2",
 		},
 		{
@@ -55,6 +57,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Status:            2,
 			Protocol:          "SFTP",
 			IP:                "::1",
+			SessionID:         "3",
 			InstanceID:        "instance1",
 		},
 		{
@@ -71,6 +74,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Status:            2,
 			Protocol:          "SFTP",
 			IP:                "::1",
+			SessionID:         "4",
 			InstanceID:        "instance2",
 		},
 		{
@@ -87,6 +91,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Status:            3,
 			Protocol:          "SCP",
 			IP:                "127.0.0.1",
+			SessionID:         "5",
 			InstanceID:        "instance3",
 		},
 	}
