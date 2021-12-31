@@ -3,7 +3,7 @@ module github.com/sftpgo/sftpgo-plugin-eventsearch
 go 1.17
 
 require (
-	github.com/drakkan/sftpgo/v2 v2.2.1-0.20211204162724-a7c0b07a2ab8
+	github.com/drakkan/sftpgo/v2 v2.2.1
 	github.com/hashicorp/go-hclog v1.0.0
 	github.com/hashicorp/go-plugin v1.4.3
 	github.com/stretchr/testify v1.7.0
