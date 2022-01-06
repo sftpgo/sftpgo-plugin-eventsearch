@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/sftpgo/sdk/plugin/eventsearcher"
+
 	"github.com/sftpgo/sftpgo-plugin-eventsearch/logger"
 )
 
@@ -13,10 +15,8 @@ var (
 
 type Searcher struct{}
 
-func (s *Searcher) SearchFsEvents(startTimestamp, endTimestamp int64, username, ip, sshCmd string, actions,
-	protocols, instanceIDs, excludeIDs []string, statuses []int32, limit, order int,
-) ([]byte, []string, []string, error) {
-	if limit <= 0 {
+func (s *Searcher) SearchFsEvents(filters *eventsearcher.FsEventSearch) ([]byte, []string, []string, error) {
+	if filters.Limit <= 0 {
 		return nil, nil, nil, errNoLimit
 	}
 
@@ -24,39 +24,48 @@ func (s *Searcher) SearchFsEvents(startTimestamp, endTimestamp int64, username, 
 	defer cancel()
 
 	var results []FsEvent
-	if startTimestamp > 0 {
-		sess = sess.Where("timestamp >= ?", startTimestamp)
+	if filters.StartTimestamp > 0 {
+		sess = sess.Where("timestamp >= ?", filters.StartTimestamp)
 	}
-	if endTimestamp > 0 {
-		sess = sess.Where("timestamp <= ?", endTimestamp)
+	if filters.EndTimestamp > 0 {
+		sess = sess.Where("timestamp <= ?", filters.EndTimestamp)
 	}
-	if len(actions) > 0 {
-		sess = sess.Where("action IN ?", actions)
+	if len(filters.Actions) > 0 {
+		sess = sess.Where("action IN ?", filters.Actions)
 	}
-	if username != "" {
-		sess = sess.Where("username = ?", username)
+	if filters.Username != "" {
+		sess = sess.Where("username = ?", filters.Username)
 	}
-	if ip != "" {
-		sess = sess.Where("ip = ?", ip)
+	if filters.IP != "" {
+		sess = sess.Where("ip = ?", filters.IP)
 	}
-	if sshCmd != "" {
-		sess = sess.Where("ssh_cmd = ?", sshCmd)
+	if filters.SSHCmd != "" {
+		sess = sess.Where("ssh_cmd = ?", filters.SSHCmd)
 	}
-	if len(protocols) > 0 {
-		sess = sess.Where("protocol IN ?", protocols)
+	if len(filters.Protocols) > 0 {
+		sess = sess.Where("protocol IN ?", filters.Protocols)
 	}
-	if len(instanceIDs) > 0 {
-		sess = sess.Where("instance_id IN ?", instanceIDs)
+	if len(filters.InstanceIDs) > 0 {
+		sess = sess.Where("instance_id IN ?", filters.InstanceIDs)
 	}
-	if len(statuses) > 0 {
-		sess = sess.Where("status IN ?", statuses)
+	if len(filters.Statuses) > 0 {
+		sess = sess.Where("status IN ?", filters.Statuses)
 	}
-	if len(excludeIDs) > 0 {
-		sess = sess.Where("id NOT IN ?", excludeIDs)
+	if len(filters.ExcludeIDs) > 0 {
+		sess = sess.Where("id NOT IN ?", filters.ExcludeIDs)
 	}
-	sess = sess.Limit(limit)
+	if filters.FsProvider >= 0 {
+		sess = sess.Where("fs_provider = ?", filters.FsProvider)
+	}
+	if filters.Bucket != "" {
+		sess = sess.Where("bucket = ?", filters.Bucket)
+	}
+	if filters.Endpoint != "" {
+		sess = sess.Where("endpoint = ?", filters.Endpoint)
+	}
+	sess = sess.Limit(filters.Limit)
 
-	if order == 0 {
+	if filters.Order == 0 {
 		sess = sess.Order("timestamp DESC, id DESC").Find(&results)
 	} else {
 		sess = sess.Order("timestamp ASC, id ASC").Find(&results)
@@ -92,10 +101,8 @@ func (s *Searcher) SearchFsEvents(startTimestamp, endTimestamp int64, username, 
 	return data, sameTsAtStart, sameTsAtEnd, err
 }
 
-func (s *Searcher) SearchProviderEvents(startTimestamp, endTimestamp int64, username, ip, objectName string,
-	limit, order int, actions, objectTypes, instanceIDs, excludeIDs []string,
-) ([]byte, []string, []string, error) {
-	if limit <= 0 {
+func (s *Searcher) SearchProviderEvents(filters *eventsearcher.ProviderEventSearch) ([]byte, []string, []string, error) {
+	if filters.Limit <= 0 {
 		return nil, nil, nil, errNoLimit
 	}
 
@@ -103,36 +110,36 @@ func (s *Searcher) SearchProviderEvents(startTimestamp, endTimestamp int64, user
 	defer cancel()
 
 	var results []ProviderEvent
-	if startTimestamp > 0 {
-		sess = sess.Where("timestamp >= ?", startTimestamp)
+	if filters.StartTimestamp > 0 {
+		sess = sess.Where("timestamp >= ?", filters.StartTimestamp)
 	}
-	if endTimestamp > 0 {
-		sess = sess.Where("timestamp <= ?", endTimestamp)
+	if filters.EndTimestamp > 0 {
+		sess = sess.Where("timestamp <= ?", filters.EndTimestamp)
 	}
-	if len(actions) > 0 {
-		sess = sess.Where("action IN ?", actions)
+	if len(filters.Actions) > 0 {
+		sess = sess.Where("action IN ?", filters.Actions)
 	}
-	if username != "" {
-		sess = sess.Where("username = ?", username)
+	if filters.Username != "" {
+		sess = sess.Where("username = ?", filters.Username)
 	}
-	if ip != "" {
-		sess = sess.Where("ip = ?", ip)
+	if filters.IP != "" {
+		sess = sess.Where("ip = ?", filters.IP)
 	}
-	if len(objectTypes) > 0 {
-		sess = sess.Where("object_type IN ?", objectTypes)
+	if len(filters.ObjectTypes) > 0 {
+		sess = sess.Where("object_type IN ?", filters.ObjectTypes)
 	}
-	if objectName != "" {
-		sess = sess.Where("object_name = ?", objectName)
+	if filters.ObjectName != "" {
+		sess = sess.Where("object_name = ?", filters.ObjectName)
 	}
-	if len(instanceIDs) > 0 {
-		sess = sess.Where("instance_id IN ?", instanceIDs)
+	if len(filters.InstanceIDs) > 0 {
+		sess = sess.Where("instance_id IN ?", filters.InstanceIDs)
 	}
-	if len(excludeIDs) > 0 {
-		sess = sess.Where("id NOT IN ?", excludeIDs)
+	if len(filters.ExcludeIDs) > 0 {
+		sess = sess.Where("id NOT IN ?", filters.ExcludeIDs)
 	}
-	sess = sess.Limit(limit)
+	sess = sess.Limit(filters.Limit)
 
-	if order == 0 {
+	if filters.Order == 0 {
 		sess = sess.Order("timestamp DESC, id DESC").Find(&results)
 	} else {
 		sess = sess.Order("timestamp ASC, id ASC").Find(&results)

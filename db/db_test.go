@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	sess, cancel := getDefaultSession()
 	defer cancel()
 
-	err := sess.AutoMigrate(&ProviderEvent{}, &FsEvent{})
+	err := sess.AutoMigrate(&providerEventV1{}, &fsEventV3{})
 	if err != nil {
 		fmt.Printf("unable to migrate database: %v\n", err)
 		os.Exit(1)
@@ -29,4 +29,46 @@ func TestMain(m *testing.M) {
 
 	exitCode := m.Run()
 	os.Exit(exitCode)
+}
+
+type fsEventV3 struct {
+	ID                string `gorm:"primaryKey;size:36"`
+	Timestamp         int64  `gorm:"size:64;not null;index:idx_fs_events_timestamp"`
+	Action            string `gorm:"size:60;not null;index:idx_fs_events_action"`
+	Username          string `gorm:"size:255;not null;index:idx_fs_events_username"`
+	FsPath            string
+	FsTargetPath      string
+	VirtualPath       string
+	VirtualTargetPath string
+	SSHCmd            string `gorm:"size:60;index:idx_fs_events_ssh_cmd"`
+	FileSize          int64  `gorm:"size:64"`
+	Status            int    `gorm:"size:32;index:idx_fs_events_status"`
+	Protocol          string `gorm:"size:30;not null;index:idx_fs_events_protocol"`
+	SessionID         string `gorm:"size:100;index:idx_fs_events_session_id"`
+	IP                string `gorm:"size:50;index:idx_ip"`
+	FsProvider        int    `gorm:"size:32;index:idx_fs_provider"`
+	Bucket            string `gorm:"size:512;index:idx_bucket"`
+	Endpoint          string `gorm:"size:512;index:idx_endpoint"`
+	OpenFlags         int    `gorm:"size:32"`
+	InstanceID        string `gorm:"size:60;index:idx_fs_events_instance_id"`
+}
+
+func (ev *fsEventV3) TableName() string {
+	return "eventstore_fs_events"
+}
+
+type providerEventV1 struct {
+	ID         string `gorm:"primaryKey;size:36"`
+	Timestamp  int64  `gorm:"size:64;not null;index:idx_provider_events__timestamp"`
+	Action     string `gorm:"size:60;not null;index:idx_provider_events_action"`
+	Username   string `gorm:"size:255;not null;index:idx_provider_events_username"`
+	IP         string `gorm:"size:50;index:idx_provider_events_ip"`
+	ObjectType string `gorm:"size:50;index:idx_provider_events_object_type"`
+	ObjectName string `gorm:"size:255;index:idx_provider_events_object_name"`
+	ObjectData []byte
+	InstanceID string `gorm:"size:60;index:idx_provider_events_instance_id"`
+}
+
+func (ev *providerEventV1) TableName() string {
+	return "eventstore_provider_events"
 }

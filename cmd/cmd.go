@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/drakkan/sftpgo/v2/sdk/plugin/eventsearcher"
 	"github.com/hashicorp/go-plugin"
+	"github.com/sftpgo/sdk/plugin/eventsearcher"
 	"github.com/urfave/cli/v2"
 
 	"github.com/sftpgo/sftpgo-plugin-eventsearch/db"
@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	version   = "1.0.1"
+	version   = "1.0.1-dev"
 	envPrefix = "SFTPGO_PLUGIN_EVENTSEARCH_"
 )
 
