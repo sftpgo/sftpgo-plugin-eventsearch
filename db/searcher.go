@@ -63,6 +63,9 @@ func (s *Searcher) SearchFsEvents(filters *eventsearcher.FsEventSearch) ([]byte,
 	if filters.Endpoint != "" {
 		sess = sess.Where("endpoint = ?", filters.Endpoint)
 	}
+	if filters.Role != "" {
+		sess = sess.Where("role = ?", filters.Role)
+	}
 	sess = sess.Limit(filters.Limit)
 
 	if filters.Order == 0 {
@@ -136,6 +139,9 @@ func (s *Searcher) SearchProviderEvents(filters *eventsearcher.ProviderEventSear
 	}
 	if len(filters.ExcludeIDs) > 0 {
 		sess = sess.Where("id NOT IN ?", filters.ExcludeIDs)
+	}
+	if filters.Role != "" {
+		sess = sess.Where("role = ?", filters.Role)
 	}
 	sess = sess.Limit(filters.Limit)
 

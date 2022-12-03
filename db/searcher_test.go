@@ -30,6 +30,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Bucket:            "",
 			Endpoint:          "endpoint1",
 			OpenFlags:         512,
+			Role:              "role1",
 		},
 		{
 			ID:                "2",
@@ -51,6 +52,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Bucket:            "",
 			Endpoint:          "",
 			OpenFlags:         0,
+			Role:              "role1",
 		},
 		{
 			ID:                "3",
@@ -72,6 +74,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Bucket:            "",
 			Endpoint:          "",
 			OpenFlags:         0,
+			Role:              "role2",
 		},
 		{
 			ID:                "4",
@@ -482,6 +485,42 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 0)
 
+	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Role:  "role1",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+
+	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Role:  "role2",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+
+	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Role:  "role3",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 0)
+
 	err = sess.Delete(&fsEvents).Error
 	assert.NoError(t, err)
 }
@@ -497,6 +536,7 @@ func TestSearchProviderEvents(t *testing.T) {
 			ObjectType: "api_key",
 			ObjectName: "123",
 			ObjectData: []byte("data"),
+			Role:       "role1",
 			InstanceID: "instance1",
 		},
 		{
@@ -736,6 +776,30 @@ func TestSearchProviderEvents(t *testing.T) {
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 2)
+
+	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Role:  "role1",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+
+	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Role:  "role3",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 0)
 
 	err = sess.Delete(&providerEvents).Error
 	assert.NoError(t, err)

@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	sess, cancel := getDefaultSession()
 	defer cancel()
 
-	err := sess.AutoMigrate(&providerEventV1{}, &fsEventV3{})
+	err := sess.AutoMigrate(&providerEventV4{}, &fsEventV4{})
 	if err != nil {
 		fmt.Printf("unable to migrate database: %v\n", err)
 		os.Exit(1)
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-type fsEventV3 struct {
+type fsEventV4 struct {
 	ID                string `gorm:"primaryKey;size:36"`
 	Timestamp         int64  `gorm:"size:64;not null;index:idx_fs_events_timestamp"`
 	Action            string `gorm:"size:60;not null;index:idx_fs_events_action"`
@@ -50,14 +50,15 @@ type fsEventV3 struct {
 	Bucket            string `gorm:"size:512;index:idx_bucket"`
 	Endpoint          string `gorm:"size:512;index:idx_endpoint"`
 	OpenFlags         int    `gorm:"size:32"`
+	Role              string `gorm:"size:255;index:idx_role"`
 	InstanceID        string `gorm:"size:60;index:idx_fs_events_instance_id"`
 }
 
-func (ev *fsEventV3) TableName() string {
+func (ev *fsEventV4) TableName() string {
 	return "eventstore_fs_events"
 }
 
-type providerEventV1 struct {
+type providerEventV4 struct {
 	ID         string `gorm:"primaryKey;size:36"`
 	Timestamp  int64  `gorm:"size:64;not null;index:idx_provider_events__timestamp"`
 	Action     string `gorm:"size:60;not null;index:idx_provider_events_action"`
@@ -66,9 +67,10 @@ type providerEventV1 struct {
 	ObjectType string `gorm:"size:50;index:idx_provider_events_object_type"`
 	ObjectName string `gorm:"size:255;index:idx_provider_events_object_name"`
 	ObjectData []byte
+	Role       string `gorm:"size:255;index:idx_role"`
 	InstanceID string `gorm:"size:60;index:idx_provider_events_instance_id"`
 }
 
-func (ev *providerEventV1) TableName() string {
+func (ev *providerEventV4) TableName() string {
 	return "eventstore_provider_events"
 }

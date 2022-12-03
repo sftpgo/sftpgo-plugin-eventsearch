@@ -10,6 +10,7 @@ type ProviderEvent struct {
 	ObjectType string `json:"object_type"`
 	ObjectName string `json:"object_name"`
 	ObjectData []byte `json:"object_data"`
+	Role       string `json:"role,omitempty"`
 	InstanceID string `json:"instance_id,omitempty"`
 }
 
