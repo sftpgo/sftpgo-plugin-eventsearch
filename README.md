@@ -36,13 +36,12 @@ This is an example configuration.
       "args": ["serve", "--driver", "postgres"],
       "sha256sum": "",
       "auto_mtls": true
-    },
-    ...
+    }
   ]
 ...
 ```
 
-With the above example the plugin is configured to connect to PostgreSQL. We set the DSN using the `SFTPGO_PLUGIN_EVENTSEARCH_DSN` environment variable. You can now use the events search API in SFTPGo.
+With the above example the plugin is configured to connect to PostgreSQL. We set the DSN using the `SFTPGO_PLUGIN_EVENTSEARCH_DSN` environment variable. You can now search events in SFTPGo using REST API or the WebAdmin UI.
 
 ## Supported database services
 

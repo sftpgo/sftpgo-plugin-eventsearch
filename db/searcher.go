@@ -113,6 +113,9 @@ func (s *Searcher) SearchProviderEvents(filters *eventsearcher.ProviderEventSear
 	defer cancel()
 
 	var results []ProviderEvent
+	if filters.OmitObjectData {
+		sess = sess.Omit("object_data")
+	}
 	if filters.StartTimestamp > 0 {
 		sess = sess.Where("timestamp >= ?", filters.StartTimestamp)
 	}

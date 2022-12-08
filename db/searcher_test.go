@@ -612,6 +612,24 @@ func TestSearchProviderEvents(t *testing.T) {
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 5)
+	for _, ev := range events {
+		assert.Equal(t, []byte("data"), ev.ObjectData)
+	}
+	// test omit object data
+	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 1,
+			Order: 1,
+		},
+		OmitObjectData: true,
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	if assert.Len(t, events, 1) {
+		assert.Nil(t, events[0].ObjectData)
+	}
 	// test order DESC
 	data, sameAtStart, sameAtEnd, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
