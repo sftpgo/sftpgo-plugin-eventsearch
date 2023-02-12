@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	sess, cancel := getDefaultSession()
 	defer cancel()
 
-	err := sess.AutoMigrate(&providerEventV4{}, &fsEventV4{})
+	err := sess.AutoMigrate(&providerEventV4{}, &fsEventV5{})
 	if err != nil {
 		fmt.Printf("unable to migrate database: %v\n", err)
 		os.Exit(1)
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-type fsEventV4 struct {
+type fsEventV5 struct {
 	ID                string `gorm:"primaryKey;size:36"`
 	Timestamp         int64  `gorm:"size:64;not null;index:idx_fs_events_timestamp"`
 	Action            string `gorm:"size:60;not null;index:idx_fs_events_action"`
@@ -42,6 +42,7 @@ type fsEventV4 struct {
 	VirtualTargetPath string
 	SSHCmd            string `gorm:"size:60;index:idx_fs_events_ssh_cmd"`
 	FileSize          int64  `gorm:"size:64"`
+	Elapsed           int64  `gorm:"size:64"`
 	Status            int    `gorm:"size:32;index:idx_fs_events_status"`
 	Protocol          string `gorm:"size:30;not null;index:idx_fs_events_protocol"`
 	SessionID         string `gorm:"size:100;index:idx_fs_events_session_id"`
@@ -54,7 +55,7 @@ type fsEventV4 struct {
 	InstanceID        string `gorm:"size:60;index:idx_fs_events_instance_id"`
 }
 
-func (ev *fsEventV4) TableName() string {
+func (ev *fsEventV5) TableName() string {
 	return "eventstore_fs_events"
 }
 
