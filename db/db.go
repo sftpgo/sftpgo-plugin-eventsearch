@@ -61,7 +61,8 @@ func Initialize(driver, dsn string) error {
 	}
 
 	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetConnMaxIdleTime(3 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(4 * time.Minute)
+	sqlDB.SetConnMaxLifetime(2 * time.Minute)
 
 	return sqlDB.Ping()
 }

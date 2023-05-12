@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/rs/xid"
 	"github.com/sftpgo/sdk/plugin/eventsearcher"
 	"github.com/stretchr/testify/assert"
 )
@@ -11,7 +12,7 @@ import (
 func TestSearchFsEvents(t *testing.T) {
 	fsEvents := []FsEvent{
 		{
-			ID:                "1",
+			ID:                xid.New().String(),
 			Timestamp:         100,
 			Action:            "upload",
 			Username:          "username1",
@@ -33,7 +34,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Role:              "role1",
 		},
 		{
-			ID:                "2",
+			ID:                xid.New().String(),
 			Timestamp:         101,
 			Action:            "download",
 			Username:          "username2",
@@ -55,7 +56,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Role:              "role1",
 		},
 		{
-			ID:                "3",
+			ID:                xid.New().String(),
 			Timestamp:         101,
 			Action:            "upload",
 			Username:          "username3",
@@ -77,7 +78,7 @@ func TestSearchFsEvents(t *testing.T) {
 			Role:              "role2",
 		},
 		{
-			ID:                "4",
+			ID:                xid.New().String(),
 			Timestamp:         101,
 			Action:            "download",
 			Username:          "username4",
@@ -98,7 +99,7 @@ func TestSearchFsEvents(t *testing.T) {
 			OpenFlags:         0,
 		},
 		{
-			ID:                "5",
+			ID:                xid.New().String(),
 			Timestamp:         102,
 			Action:            "download",
 			Username:          "username5",
@@ -127,7 +128,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 
 	s := Searcher{}
-	_, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	_, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 0,
 		},
@@ -135,7 +136,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.ErrorIs(t, err, errNoLimit)
 
 	// test order ASC
-	data, sameAtStart, sameAtEnd, err := s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err := s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Order: 1,
@@ -144,17 +145,14 @@ func TestSearchFsEvents(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, fsEvents[0].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 1)
-	assert.Equal(t, fsEvents[4].ID, sameAtEnd[0])
-
 	var events []FsEvent
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 5)
+	assert.Equal(t, fsEvents[0].ID, events[0].ID)
+	assert.Equal(t, fsEvents[4].ID, events[4].ID)
 	// test order DESC
-	data, sameAtStart, sameAtEnd, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Order: 0,
@@ -163,49 +161,177 @@ func TestSearchFsEvents(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, fsEvents[4].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 1)
-	assert.Equal(t, fsEvents[0].ID, sameAtEnd[0])
-
 	events = nil
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 5)
+	assert.Equal(t, fsEvents[4].ID, events[0].ID)
+	assert.Equal(t, fsEvents[0].ID, events[4].ID)
 	// test limit and pagination
-	data, sameAtStart, sameAtEnd, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
-			Limit: 3,
+			Limit: 2,
 			Order: 1,
 		},
 		FsProvider: -1,
 	})
 	assert.NoError(t, err)
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, fsEvents[0].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 2)
-	assert.Equal(t, fsEvents[1].ID, sameAtEnd[1])
-	assert.Equal(t, fsEvents[2].ID, sameAtEnd[0])
 
 	events = nil
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
-	assert.Len(t, events, 3)
+	assert.Len(t, events, 2)
+	assert.Equal(t, fsEvents[0].ID, events[0].ID)
+	assert.Equal(t, fsEvents[1].ID, events[1].ID)
 	// get next page
-	data, sameAtStart, sameAtEnd, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
-			StartTimestamp: events[2].Timestamp,
-			Limit:          3,
+			StartTimestamp: events[1].Timestamp,
+			Limit:          2,
 			Order:          1,
-			ExcludeIDs:     sameAtEnd,
+			FromID:         events[1].ID,
 		},
 		FsProvider: -1,
 	})
 	assert.NoError(t, err)
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, fsEvents[3].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 1)
-	assert.Equal(t, fsEvents[4].ID, sameAtEnd[0])
+
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+	assert.Equal(t, fsEvents[2].ID, events[0].ID)
+	assert.Equal(t, fsEvents[3].ID, events[1].ID)
+	// get last page
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			StartTimestamp: events[1].Timestamp,
+			Limit:          2,
+			Order:          1,
+			FromID:         events[1].ID,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+	assert.Equal(t, fsEvents[4].ID, events[0].ID)
+	// get previous page
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			EndTimestamp: events[0].Timestamp,
+			Limit:        2,
+			Order:        0,
+			FromID:       events[0].ID,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
+
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+	assert.Equal(t, fsEvents[3].ID, events[0].ID)
+	assert.Equal(t, fsEvents[2].ID, events[1].ID)
+	// get first page
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			EndTimestamp: events[1].Timestamp,
+			Limit:        2,
+			Order:        0,
+			FromID:       events[1].ID,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
+
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+	assert.Equal(t, fsEvents[1].ID, events[0].ID)
+	assert.Equal(t, fsEvents[0].ID, events[1].ID)
+	// paginate starting from DESC
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 2,
+			Order: 0,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
+
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+	assert.Equal(t, fsEvents[4].ID, events[0].ID)
+	assert.Equal(t, fsEvents[3].ID, events[1].ID)
+	// get next page
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			EndTimestamp: events[1].Timestamp,
+			Limit:        2,
+			Order:        0,
+			FromID:       events[1].ID,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
+
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+	assert.Equal(t, fsEvents[2].ID, events[0].ID)
+	assert.Equal(t, fsEvents[1].ID, events[1].ID)
+	// get last page
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			EndTimestamp: events[1].Timestamp,
+			Limit:        2,
+			Order:        0,
+			FromID:       events[1].ID,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+	assert.Equal(t, fsEvents[0].ID, events[0].ID)
+	// get previous page
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			StartTimestamp: events[0].Timestamp,
+			Limit:          2,
+			Order:          1,
+			FromID:         events[0].ID,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
+
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+	assert.Equal(t, fsEvents[1].ID, events[0].ID)
+	assert.Equal(t, fsEvents[2].ID, events[1].ID)
+	// get first page
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			StartTimestamp: events[1].Timestamp,
+			Limit:          2,
+			Order:          1,
+			FromID:         events[1].ID,
+		},
+		FsProvider: -1,
+	})
+	assert.NoError(t, err)
 
 	events = nil
 	err = json.Unmarshal(data, &events)
@@ -213,30 +339,9 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.Len(t, events, 2)
 	assert.Equal(t, fsEvents[3].ID, events[0].ID)
 	assert.Equal(t, fsEvents[4].ID, events[1].ID)
-	// get previous page
-	data, sameAtStart, sameAtEnd, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
-		CommonSearchParams: eventsearcher.CommonSearchParams{
-			EndTimestamp: events[0].Timestamp,
-			Limit:        3,
-			Order:        1,
-			ExcludeIDs:   sameAtStart,
-		},
-		FsProvider: -1,
-	})
-	assert.NoError(t, err)
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, fsEvents[0].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 2)
-	assert.Equal(t, fsEvents[1].ID, sameAtEnd[1])
-	assert.Equal(t, fsEvents[2].ID, sameAtEnd[0])
 
-	events = nil
-	err = json.Unmarshal(data, &events)
-	assert.NoError(t, err)
-	assert.Len(t, events, 3)
-	assert.Equal(t, fsEvents[:3], events)
 	// test other search conditions
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Username: "username1",
 			Limit:    100,
@@ -250,7 +355,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.Len(t, events, 1)
 	assert.Equal(t, fsEvents[0], events[0])
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Order: 1,
@@ -265,7 +370,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.Len(t, events, 4)
 	assert.Equal(t, fsEvents[:4], events)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -278,7 +383,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 3)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -291,11 +396,11 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 0)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
-			Limit:   100,
-			Actions: []string{"upload", "download", "rename"},
+			Limit: 100,
 		},
+		Actions:    []string{"upload", "download", "rename"},
 		FsProvider: -1,
 	})
 	assert.NoError(t, err)
@@ -304,11 +409,11 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 5)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
-			Limit:   100,
-			Actions: []string{"rename"},
+			Limit: 100,
 		},
+		Actions:    []string{"rename"},
 		FsProvider: -1,
 	})
 	assert.NoError(t, err)
@@ -317,7 +422,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 0)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -330,7 +435,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 4)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -343,7 +448,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			InstanceIDs: []string{"instance1"},
 			Limit:       100,
@@ -356,7 +461,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 2)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			InstanceIDs: []string{"instance1", "instance3"},
 			Limit:       100,
@@ -369,7 +474,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 3)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			InstanceIDs: []string{"instance1", "instance2", "instance3"},
 			Limit:       100,
@@ -383,7 +488,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			InstanceIDs: []string{"instance1", "instance2", "instance3"},
 			Limit:       100,
@@ -397,7 +502,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 5)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -409,7 +514,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 3)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -421,7 +526,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -433,7 +538,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 0)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -446,7 +551,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -459,7 +564,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 0)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -472,7 +577,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 		},
@@ -485,7 +590,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 0)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Role:  "role1",
@@ -497,7 +602,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 2)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Role:  "role2",
@@ -509,7 +614,7 @@ func TestSearchFsEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
 
-	data, _, _, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
+	data, err = s.SearchFsEvents(&eventsearcher.FsEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Role:  "role3",
@@ -528,7 +633,7 @@ func TestSearchFsEvents(t *testing.T) {
 func TestSearchProviderEvents(t *testing.T) {
 	providerEvents := []ProviderEvent{
 		{
-			ID:         "1",
+			ID:         xid.New().String(),
 			Timestamp:  100,
 			Action:     "add",
 			Username:   "username1",
@@ -540,7 +645,7 @@ func TestSearchProviderEvents(t *testing.T) {
 			InstanceID: "instance1",
 		},
 		{
-			ID:         "2",
+			ID:         xid.New().String(),
 			Timestamp:  101,
 			Action:     "delete",
 			Username:   "username2",
@@ -551,7 +656,7 @@ func TestSearchProviderEvents(t *testing.T) {
 			InstanceID: "instance2",
 		},
 		{
-			ID:         "3",
+			ID:         xid.New().String(),
 			Timestamp:  101,
 			Action:     "update",
 			Username:   "username3",
@@ -562,7 +667,7 @@ func TestSearchProviderEvents(t *testing.T) {
 			InstanceID: "instance1",
 		},
 		{
-			ID:         "4",
+			ID:         xid.New().String(),
 			Timestamp:  101,
 			Action:     "update",
 			Username:   "username4",
@@ -573,7 +678,7 @@ func TestSearchProviderEvents(t *testing.T) {
 			InstanceID: "instance1",
 		},
 		{
-			ID:         "5",
+			ID:         xid.New().String(),
 			Timestamp:  102,
 			Action:     "update",
 			Username:   "username5",
@@ -592,31 +697,27 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.NoError(t, err)
 
 	s := Searcher{}
-	_, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{})
+	_, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{})
 	assert.ErrorIs(t, err, errNoLimit)
 	// test order ASC
-	data, sameAtStart, sameAtEnd, err := s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err := s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Order: 1,
 		},
 	})
 	assert.NoError(t, err)
-
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, providerEvents[0].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 1)
-	assert.Equal(t, providerEvents[4].ID, sameAtEnd[0])
-
 	var events []ProviderEvent
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 5)
+	assert.Equal(t, providerEvents[0].ID, events[0].ID)
+	assert.Equal(t, providerEvents[4].ID, events[4].ID)
 	for _, ev := range events {
 		assert.Equal(t, []byte("data"), ev.ObjectData)
 	}
 	// test omit object data
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 1,
 			Order: 1,
@@ -631,7 +732,7 @@ func TestSearchProviderEvents(t *testing.T) {
 		assert.Nil(t, events[0].ObjectData)
 	}
 	// test order DESC
-	data, sameAtStart, sameAtEnd, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Order: 0,
@@ -639,47 +740,37 @@ func TestSearchProviderEvents(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, providerEvents[4].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 1)
-	assert.Equal(t, providerEvents[0].ID, sameAtEnd[0])
-
 	events = nil
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 5)
+	assert.Equal(t, providerEvents[4].ID, events[0].ID)
+	assert.Equal(t, providerEvents[0].ID, events[4].ID)
 	// test limit and pagination
-	data, sameAtStart, sameAtEnd, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 3,
 			Order: 1,
 		},
 	})
 	assert.NoError(t, err)
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, providerEvents[0].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 2)
-	assert.Equal(t, providerEvents[1].ID, sameAtEnd[1])
-	assert.Equal(t, providerEvents[2].ID, sameAtEnd[0])
 
 	events = nil
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 3)
+	assert.Equal(t, providerEvents[0].ID, events[0].ID)
+	assert.Equal(t, providerEvents[2].ID, events[2].ID)
 	// get next page
-	data, sameAtStart, sameAtEnd, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit:          3,
 			Order:          1,
 			StartTimestamp: events[2].Timestamp,
-			ExcludeIDs:     sameAtEnd,
+			FromID:         events[2].ID,
 		},
 	})
 	assert.NoError(t, err)
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, providerEvents[3].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 1)
-	assert.Equal(t, providerEvents[4].ID, sameAtEnd[0])
 
 	events = nil
 	err = json.Unmarshal(data, &events)
@@ -688,33 +779,29 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.Equal(t, providerEvents[3].ID, events[0].ID)
 	assert.Equal(t, providerEvents[4].ID, events[1].ID)
 	// get previous page
-	data, sameAtStart, sameAtEnd, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit:        3,
-			Order:        1,
+			Order:        0,
 			EndTimestamp: events[0].Timestamp,
-			ExcludeIDs:   sameAtStart,
+			FromID:       events[0].ID,
 		},
 	})
 	assert.NoError(t, err)
-	assert.Len(t, sameAtStart, 1)
-	assert.Equal(t, providerEvents[0].ID, sameAtStart[0])
-	assert.Len(t, sameAtEnd, 2)
-	assert.Equal(t, providerEvents[1].ID, sameAtEnd[1])
-	assert.Equal(t, providerEvents[2].ID, sameAtEnd[0])
 
 	events = nil
 	err = json.Unmarshal(data, &events)
 	assert.NoError(t, err)
 	assert.Len(t, events, 3)
-	assert.Equal(t, providerEvents[:3], events)
+	assert.Equal(t, providerEvents[2].ID, events[0].ID)
+	assert.Equal(t, providerEvents[0].ID, events[2].ID)
 	// test other search conditions
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
-			Limit:   100,
-			Order:   0,
-			Actions: []string{"add", "delete"},
+			Limit: 100,
+			Order: 0,
 		},
+		Actions: []string{"add", "delete"},
 	})
 	assert.NoError(t, err)
 	events = nil
@@ -722,11 +809,10 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 2)
 
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit:    100,
 			Order:    0,
-			Actions:  []string{"add", "update"},
 			Username: "username1",
 			IP:       "127.1.1.1",
 		},
@@ -738,7 +824,7 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.Len(t, events, 1)
 	assert.Equal(t, providerEvents[0].ID, events[0].ID)
 
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Order: 0,
@@ -751,7 +837,7 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 3)
 
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Order: 0,
@@ -766,7 +852,7 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.Len(t, events, 1)
 	assert.Equal(t, providerEvents[0].ID, events[0].ID)
 
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit:       100,
 			Order:       0,
@@ -781,7 +867,7 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 0)
 
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit:       100,
 			Order:       0,
@@ -795,7 +881,7 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 2)
 
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Role:  "role1",
@@ -807,7 +893,7 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
 
-	data, _, _, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
+	data, err = s.SearchProviderEvents(&eventsearcher.ProviderEventSearch{
 		CommonSearchParams: eventsearcher.CommonSearchParams{
 			Limit: 100,
 			Role:  "role3",
@@ -820,5 +906,270 @@ func TestSearchProviderEvents(t *testing.T) {
 	assert.Len(t, events, 0)
 
 	err = sess.Delete(&providerEvents).Error
+	assert.NoError(t, err)
+}
+
+func TestSearchLogEvents(t *testing.T) {
+	logEvents := []LogEvent{
+		{
+			ID:         xid.New().String(),
+			Timestamp:  100,
+			Event:      1,
+			Protocol:   "SSH",
+			Username:   "username1",
+			IP:         "127.1.1.1",
+			Message:    "error1",
+			Role:       "role1",
+			InstanceID: "instance1",
+		},
+		{
+			ID:         xid.New().String(),
+			Timestamp:  101,
+			Event:      2,
+			Protocol:   "FTP",
+			Username:   "username2",
+			IP:         "127.1.0.1",
+			Message:    "error2",
+			InstanceID: "instance2",
+		},
+		{
+			ID:         xid.New().String(),
+			Timestamp:  101,
+			Event:      3,
+			Protocol:   "FTP",
+			Username:   "username3",
+			IP:         "127.1.0.1",
+			Message:    "error3",
+			InstanceID: "instance1",
+		},
+		{
+			ID:         xid.New().String(),
+			Timestamp:  101,
+			Event:      3,
+			Protocol:   "HTTP",
+			Username:   "username4",
+			IP:         "127.1.0.1",
+			Message:    "error4",
+			InstanceID: "instance1",
+		},
+		{
+			ID:         xid.New().String(),
+			Timestamp:  102,
+			Event:      2,
+			Protocol:   "DAV",
+			Username:   "username5",
+			IP:         "127.1.0.1",
+			Message:    "error5",
+			InstanceID: "instance3",
+		},
+	}
+
+	sess, cancel := getDefaultSession()
+	defer cancel()
+
+	err := sess.Create(&logEvents).Error
+	assert.NoError(t, err)
+
+	s := Searcher{}
+	_, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{})
+	assert.ErrorIs(t, err, errNoLimit)
+	// test order ASC
+	data, err := s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Order: 1,
+		},
+	})
+	assert.NoError(t, err)
+	var events []LogEvent
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 5)
+	assert.Equal(t, logEvents[0].ID, events[0].ID)
+	assert.Equal(t, logEvents[4].ID, events[4].ID)
+	// test order DESC
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Order: 0,
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 5)
+	assert.Equal(t, logEvents[4].ID, events[0].ID)
+	assert.Equal(t, logEvents[0].ID, events[4].ID)
+	// test limit and pagination
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 3,
+			Order: 1,
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 3)
+	assert.Equal(t, logEvents[0].ID, events[0].ID)
+	assert.Equal(t, logEvents[2].ID, events[2].ID)
+	// get next page
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit:          3,
+			Order:          1,
+			StartTimestamp: events[2].Timestamp,
+			FromID:         events[2].ID,
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+	assert.Equal(t, logEvents[3].ID, events[0].ID)
+	assert.Equal(t, logEvents[4].ID, events[1].ID)
+	// get previous page
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit:        3,
+			Order:        0,
+			EndTimestamp: events[0].Timestamp,
+			FromID:       events[0].ID,
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 3)
+	assert.Equal(t, logEvents[2].ID, events[0].ID)
+	assert.Equal(t, logEvents[0].ID, events[2].ID)
+	// test other search conditions
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+		},
+		Events: []int32{100, 101},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 0)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+		},
+		Events: []int32{1},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+		},
+		Protocols: []string{"FTP", "DAV"},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 3)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit:    100,
+			Username: "u1",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 0)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit:    100,
+			Username: "username1",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit:    100,
+			Username: "username1",
+			IP:       "127.1.1.1",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit:    100,
+			Username: "username1",
+			IP:       "127.1.0.1",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 0)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit:       100,
+			InstanceIDs: []string{"instance2", "instance3"},
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 2)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Role:  "role1",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 1)
+
+	data, err = s.SearchLogEvents(&eventsearcher.LogEventSearch{
+		CommonSearchParams: eventsearcher.CommonSearchParams{
+			Limit: 100,
+			Role:  "role123",
+		},
+	})
+	assert.NoError(t, err)
+	events = nil
+	err = json.Unmarshal(data, &events)
+	assert.NoError(t, err)
+	assert.Len(t, events, 0)
+
+	err = sess.Delete(&logEvents).Error
 	assert.NoError(t, err)
 }

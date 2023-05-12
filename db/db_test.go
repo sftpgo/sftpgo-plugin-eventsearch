@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	sess, cancel := getDefaultSession()
 	defer cancel()
 
-	err := sess.AutoMigrate(&providerEventV4{}, &fsEventV5{})
+	err := sess.AutoMigrate(&providerEventV4{}, &fsEventV5{}, &logEventV1{})
 	if err != nil {
 		fmt.Printf("unable to migrate database: %v\n", err)
 		os.Exit(1)
@@ -45,13 +45,13 @@ type fsEventV5 struct {
 	Elapsed           int64  `gorm:"size:64"`
 	Status            int    `gorm:"size:32;index:idx_fs_events_status"`
 	Protocol          string `gorm:"size:30;not null;index:idx_fs_events_protocol"`
-	SessionID         string `gorm:"size:100;index:idx_fs_events_session_id"`
-	IP                string `gorm:"size:50;index:idx_ip"`
-	FsProvider        int    `gorm:"size:32;index:idx_fs_provider"`
-	Bucket            string `gorm:"size:512;index:idx_bucket"`
-	Endpoint          string `gorm:"size:512;index:idx_endpoint"`
+	SessionID         string `gorm:"size:100"`
+	IP                string `gorm:"size:50;index:idx_fs_events_ip"`
+	FsProvider        int    `gorm:"size:32;index:idx_fs_events_provider"`
+	Bucket            string `gorm:"size:512;index:idx_fs_events_bucket"`
+	Endpoint          string `gorm:"size:512;index:idx_fs_events_endpoint"`
 	OpenFlags         int    `gorm:"size:32"`
-	Role              string `gorm:"size:255;index:idx_role"`
+	Role              string `gorm:"size:255;index:idx_fs_events_role"`
 	InstanceID        string `gorm:"size:60;index:idx_fs_events_instance_id"`
 }
 
@@ -68,10 +68,26 @@ type providerEventV4 struct {
 	ObjectType string `gorm:"size:50;index:idx_provider_events_object_type"`
 	ObjectName string `gorm:"size:255;index:idx_provider_events_object_name"`
 	ObjectData []byte
-	Role       string `gorm:"size:255;index:idx_role"`
+	Role       string `gorm:"size:255;index:idx_provider_events_role"`
 	InstanceID string `gorm:"size:60;index:idx_provider_events_instance_id"`
 }
 
 func (ev *providerEventV4) TableName() string {
 	return "eventstore_provider_events"
+}
+
+type logEventV1 struct {
+	ID         string `gorm:"primaryKey;size:36"`
+	Timestamp  int64  `gorm:"size:64;not null;index:idx_log_events_timestamp"`
+	Event      int    `gorm:"size:32;not null;index:idx_log_events_event"`
+	Protocol   string `gorm:"size:30;not null;index:idx_log_events_protocol"`
+	Username   string `gorm:"size:255;index:idx_log_events_username"`
+	IP         string `gorm:"size:50;index:idx_log_events_ip"`
+	Message    string `gorm:"size:2048"`
+	Role       string `gorm:"size:255;index:idx_log_events_role"`
+	InstanceID string `gorm:"size:60;index:idx_log_events_instance_id"`
+}
+
+func (ev *logEventV1) TableName() string {
+	return "eventstore_log_events"
 }

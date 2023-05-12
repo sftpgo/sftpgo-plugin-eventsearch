@@ -15,9 +15,9 @@ var (
 
 type Searcher struct{}
 
-func (s *Searcher) SearchFsEvents(filters *eventsearcher.FsEventSearch) ([]byte, []string, []string, error) {
+func (s *Searcher) SearchFsEvents(filters *eventsearcher.FsEventSearch) ([]byte, error) {
 	if filters.Limit <= 0 {
-		return nil, nil, nil, errNoLimit
+		return nil, errNoLimit
 	}
 
 	sess, cancel := getDefaultSession()
@@ -51,9 +51,6 @@ func (s *Searcher) SearchFsEvents(filters *eventsearcher.FsEventSearch) ([]byte,
 	if len(filters.Statuses) > 0 {
 		sess = sess.Where("status IN ?", filters.Statuses)
 	}
-	if len(filters.ExcludeIDs) > 0 {
-		sess = sess.Where("id NOT IN ?", filters.ExcludeIDs)
-	}
 	if filters.FsProvider >= 0 {
 		sess = sess.Where("fs_provider = ?", filters.FsProvider)
 	}
@@ -69,44 +66,33 @@ func (s *Searcher) SearchFsEvents(filters *eventsearcher.FsEventSearch) ([]byte,
 	sess = sess.Limit(filters.Limit)
 
 	if filters.Order == 0 {
+		if filters.FromID != "" {
+			sess = sess.Where("id < ?", filters.FromID)
+		}
 		sess = sess.Order("timestamp DESC, id DESC").Find(&results)
 	} else {
+		if filters.FromID != "" {
+			sess = sess.Where("id > ?", filters.FromID)
+		}
 		sess = sess.Order("timestamp ASC, id ASC").Find(&results)
 	}
 	err := sess.Error
 	if err != nil {
 		logger.AppLogger.Warn("unable to search fs events", "error", err)
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	data, err := json.Marshal(results)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	var sameTsAtStart []string
-	var sameTsAtEnd []string
-
-	for idx := range results {
-		if results[idx].Timestamp != results[0].Timestamp {
-			break
-		}
-		sameTsAtStart = append(sameTsAtStart, results[idx].ID)
-	}
-	lastIdx := len(results) - 1
-	for i := lastIdx; i >= 0; i-- {
-		if results[i].Timestamp != results[lastIdx].Timestamp {
-			break
-		}
-		sameTsAtEnd = append(sameTsAtEnd, results[i].ID)
-	}
-
-	return data, sameTsAtStart, sameTsAtEnd, err
+	return data, err
 }
 
-func (s *Searcher) SearchProviderEvents(filters *eventsearcher.ProviderEventSearch) ([]byte, []string, []string, error) {
+func (s *Searcher) SearchProviderEvents(filters *eventsearcher.ProviderEventSearch) ([]byte, error) {
 	if filters.Limit <= 0 {
-		return nil, nil, nil, errNoLimit
+		return nil, errNoLimit
 	}
 
 	sess, cancel := getDefaultSession()
@@ -140,8 +126,65 @@ func (s *Searcher) SearchProviderEvents(filters *eventsearcher.ProviderEventSear
 	if len(filters.InstanceIDs) > 0 {
 		sess = sess.Where("instance_id IN ?", filters.InstanceIDs)
 	}
-	if len(filters.ExcludeIDs) > 0 {
-		sess = sess.Where("id NOT IN ?", filters.ExcludeIDs)
+	if filters.Role != "" {
+		sess = sess.Where("role = ?", filters.Role)
+	}
+	sess = sess.Limit(filters.Limit)
+
+	if filters.Order == 0 {
+		if filters.FromID != "" {
+			sess = sess.Where("id < ?", filters.FromID)
+		}
+		sess = sess.Order("timestamp DESC, id DESC").Find(&results)
+	} else {
+		if filters.FromID != "" {
+			sess = sess.Where("id > ?", filters.FromID)
+		}
+		sess = sess.Order("timestamp ASC, id ASC").Find(&results)
+	}
+	err := sess.Error
+	if err != nil {
+		logger.AppLogger.Warn("unable to search provider events", "error", err)
+		return nil, err
+	}
+
+	data, err := json.Marshal(results)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, err
+}
+
+func (s *Searcher) SearchLogEvents(filters *eventsearcher.LogEventSearch) ([]byte, error) {
+	if filters.Limit <= 0 {
+		return nil, errNoLimit
+	}
+
+	sess, cancel := getDefaultSession()
+	defer cancel()
+
+	var results []LogEvent
+	if filters.StartTimestamp > 0 {
+		sess = sess.Where("timestamp >= ?", filters.StartTimestamp)
+	}
+	if filters.EndTimestamp > 0 {
+		sess = sess.Where("timestamp <= ?", filters.EndTimestamp)
+	}
+	if len(filters.Events) > 0 {
+		sess = sess.Where("event IN ?", filters.Events)
+	}
+	if len(filters.Protocols) > 0 {
+		sess = sess.Where("protocol IN ?", filters.Protocols)
+	}
+	if filters.Username != "" {
+		sess = sess.Where("username = ?", filters.Username)
+	}
+	if filters.IP != "" {
+		sess = sess.Where("ip = ?", filters.IP)
+	}
+	if len(filters.InstanceIDs) > 0 {
+		sess = sess.Where("instance_id IN ?", filters.InstanceIDs)
 	}
 	if filters.Role != "" {
 		sess = sess.Where("role = ?", filters.Role)
@@ -149,37 +192,26 @@ func (s *Searcher) SearchProviderEvents(filters *eventsearcher.ProviderEventSear
 	sess = sess.Limit(filters.Limit)
 
 	if filters.Order == 0 {
+		if filters.FromID != "" {
+			sess = sess.Where("id < ?", filters.FromID)
+		}
 		sess = sess.Order("timestamp DESC, id DESC").Find(&results)
 	} else {
+		if filters.FromID != "" {
+			sess = sess.Where("id > ?", filters.FromID)
+		}
 		sess = sess.Order("timestamp ASC, id ASC").Find(&results)
 	}
 	err := sess.Error
 	if err != nil {
-		logger.AppLogger.Warn("unable to search provider events", "error", err)
-		return nil, nil, nil, err
+		logger.AppLogger.Warn("unable to search log events", "error", err)
+		return nil, err
 	}
 
 	data, err := json.Marshal(results)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	var sameTsAtStart []string
-	var sameTsAtEnd []string
-
-	for idx := range results {
-		if results[idx].Timestamp != results[0].Timestamp {
-			break
-		}
-		sameTsAtStart = append(sameTsAtStart, results[idx].ID)
-	}
-	lastIdx := len(results) - 1
-	for i := lastIdx; i >= 0; i-- {
-		if results[i].Timestamp != results[lastIdx].Timestamp {
-			break
-		}
-		sameTsAtEnd = append(sameTsAtEnd, results[i].ID)
-	}
-
-	return data, sameTsAtStart, sameTsAtEnd, err
+	return data, err
 }
