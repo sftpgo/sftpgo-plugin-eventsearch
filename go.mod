@@ -4,14 +4,14 @@ go 1.20
 
 require (
 	github.com/hashicorp/go-hclog v1.5.0
-	github.com/hashicorp/go-plugin v1.4.10
+	github.com/hashicorp/go-plugin v1.5.2
 	github.com/rs/xid v1.5.0
 	github.com/sftpgo/sdk v0.1.5
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.7
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.2
+	gorm.io/gorm v1.25.4
 )
 
 require (
@@ -23,7 +23,7 @@ require (
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.4.2 // indirect
+	github.com/jackc/pgx/v5 v5.4.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -34,12 +34,12 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230720185612-659f7aaaa771 // indirect
-	google.golang.org/grpc v1.56.2 // indirect
+	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // indirect
+	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
