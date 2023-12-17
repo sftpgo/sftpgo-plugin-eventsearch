@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	version   = "1.0.13"
+	version   = "1.0.13-dev"
 	envPrefix = "SFTPGO_PLUGIN_EVENTSEARCH_"
 )
 
@@ -38,9 +38,10 @@ var (
 )
 
 var (
-	driver     string
-	instanceID string
-	dsn        string
+	driver          string
+	instanceID      string
+	dsn             string
+	customTLSConfig string
 
 	serveFlags = []cli.Flag{
 		&cli.StringFlag{
@@ -57,6 +58,13 @@ var (
 			EnvVars:     []string{envPrefix + "DSN"},
 			Required:    true,
 		},
+		&cli.StringFlag{
+			Name:        "custom-tls",
+			Usage:       "Custom TLS config for MySQL driver (optional)",
+			Destination: &customTLSConfig,
+			EnvVars:     []string{envPrefix + "CUSTOM_TLS"},
+			Required:    false,
+		},
 	}
 
 	rootCmd = &cli.App{
@@ -71,7 +79,7 @@ var (
 				Action: func(c *cli.Context) error {
 					logger.AppLogger.Info("starting sftpgo-plugin-eventsearch", "version", getVersionString(),
 						"database driver", driver, "instance id", instanceID)
-					if err := db.Initialize(driver, dsn); err != nil {
+					if err := db.Initialize(driver, dsn, customTLSConfig); err != nil {
 						logger.AppLogger.Error("unable to initialize database", "error", err)
 						return err
 					}
