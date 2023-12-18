@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	version   = "1.0.13-dev"
+	version   = "1.0.14"
 	envPrefix = "SFTPGO_PLUGIN_EVENTSEARCH_"
 )
 
