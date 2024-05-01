@@ -76,7 +76,7 @@ var (
 				Name:  "serve",
 				Usage: "Launch the SFTPGo plugin, it must be called from an SFTPGo instance",
 				Flags: serveFlags,
-				Action: func(c *cli.Context) error {
+				Action: func(_ *cli.Context) error {
 					logger.AppLogger.Info("starting sftpgo-plugin-eventsearch", "version", getVersionString(),
 						"database driver", driver, "instance id", instanceID)
 					if err := db.Initialize(driver, dsn, customTLSConfig); err != nil {
