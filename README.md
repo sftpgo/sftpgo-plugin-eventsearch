@@ -14,12 +14,14 @@ NAME:
    sftpgo-plugin-eventsearch serve - Launch the SFTPGo plugin, it must be called from an SFTPGo instance
 
 USAGE:
-   sftpgo-plugin-eventsearch serve [command options] [arguments...]
+   sftpgo-plugin-eventsearch serve [command options]
 
 OPTIONS:
-   --driver value  Database driver (required) [$SFTPGO_PLUGIN_EVENTSEARCH_DRIVER]
-   --dsn value     Data source URI (required) [$SFTPGO_PLUGIN_EVENTSEARCH_DSN]
-   --help, -h      show help (default: false)
+   --driver value      Database driver (required) [$SFTPGO_PLUGIN_EVENTSEARCH_DRIVER]
+   --dsn value         Data source URI (required) [$SFTPGO_PLUGIN_EVENTSEARCH_DSN]
+   --custom-tls value  Custom TLS config for MySQL driver (optional) [$SFTPGO_PLUGIN_EVENTSEARCH_CUSTOM_TLS]
+   --pool-size value   Naximum number of open database connections (default: 0) [$SFTPGO_PLUGIN_EVENTSEARCH_POOL_SIZE]
+   --help, -h          show help
 ```
 
 The `driver` and `dsn` flags are required and must match the ones configured for [sftpgo-plugin-eventstore](https://github.com/sftpgo/sftpgo-plugin-eventstore).

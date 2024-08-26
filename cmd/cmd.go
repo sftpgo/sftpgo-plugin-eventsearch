@@ -42,6 +42,7 @@ var (
 	instanceID      string
 	dsn             string
 	customTLSConfig string
+	poolSize        int
 
 	serveFlags = []cli.Flag{
 		&cli.StringFlag{
@@ -65,6 +66,13 @@ var (
 			EnvVars:     []string{envPrefix + "CUSTOM_TLS"},
 			Required:    false,
 		},
+		&cli.IntFlag{
+			Name:        "pool-size",
+			Usage:       "Naximum number of open database connections",
+			Destination: &poolSize,
+			EnvVars:     []string{envPrefix + "POOL_SIZE"},
+			Required:    false,
+		},
 	}
 
 	rootCmd = &cli.App{
@@ -78,8 +86,8 @@ var (
 				Flags: serveFlags,
 				Action: func(_ *cli.Context) error {
 					logger.AppLogger.Info("starting sftpgo-plugin-eventsearch", "version", getVersionString(),
-						"database driver", driver, "instance id", instanceID)
-					if err := db.Initialize(driver, dsn, customTLSConfig); err != nil {
+						"database driver", driver, "instance id", instanceID, "pool size", poolSize)
+					if err := db.Initialize(driver, dsn, customTLSConfig, poolSize); err != nil {
 						logger.AppLogger.Error("unable to initialize database", "error", err)
 						return err
 					}
