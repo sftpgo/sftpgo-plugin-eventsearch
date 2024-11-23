@@ -1,6 +1,6 @@
 # SFTPGo events search plugin
 
-![Build](https://github.com/sftpgo/sftpgo-plugin-eventsearch/workflows/Build/badge.svg?branch=main&event=push)
+![Build](https://github.com/sftpgo/sftpgo-plugin-eventsearch/workflows/Build/badge.svg)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 This plugin allows to search [SFTPGo](https://github.com/drakkan/sftpgo/) filesystem and provider events stored using the [sftpgo-plugin-eventstore](https://github.com/sftpgo/sftpgo-plugin-eventstore).
